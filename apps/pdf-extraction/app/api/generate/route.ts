@@ -4,7 +4,7 @@ import { createOpenAI } from '@ai-sdk/openai'
 import { createAnthropic } from '@ai-sdk/anthropic'
 import { createGoogleGenerativeAI } from '@ai-sdk/google'
 import { LanguageModelV1 } from '@ai-sdk/provider'
-import { PromptDataType, PromptDefinitionType, promptDefinitionFromMarkdown, promptExecuteBuilder } from '../../../lib/prompt-utils'
+import { PromptDataType, PromptDefinitionType, promptDefinitionFromMarkdown, promptExecuteBuilder } from '@/lib/prompt-utils'
 
 // Import all prompt files
 import ementa from '@/prompts/ementa.md'

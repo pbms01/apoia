@@ -1,5 +1,3 @@
-const path = require('path')
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     output: "standalone",
@@ -11,13 +9,6 @@ const nextConfig = {
             test: /\.(txt|md|html)$/,
             type: 'asset/source',
         })
-
-        // Resolve modules from both local and root project node_modules
-        config.resolve.modules = [
-            path.resolve(__dirname, 'node_modules'),
-            path.resolve(__dirname, '../../node_modules'),
-            'node_modules',
-        ]
 
         if (isServer) {
             config.externals = [

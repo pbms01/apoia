@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { promptDefinitionFromMarkdown } from '../../../lib/prompt-utils'
+import { promptDefinitionFromMarkdown } from '@/lib/prompt-utils'
 
 // Import all prompt markdown files
 import ementa from '@/prompts/ementa.md'
