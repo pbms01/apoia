@@ -1,18 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { extractText, getDocumentProxy } from 'unpdf'
+import PDFParser from 'pdf2json'
 
-async function pdfToText(arrayBuffer: ArrayBuffer) {
-    const pdf = await getDocumentProxy(new Uint8Array(arrayBuffer))
-    const { totalPages, text: rawText } = await extractText(pdf, { mergePages: false })
+async function pdfToText(buffer: Buffer): Promise<{ text: string; numPages: number }> {
+    return new Promise((resolve, reject) => {
+        const pdfParser = new PDFParser(null, true) // needRawText = true
 
-    const s = rawText
-        .map((pageText, idx) => {
-            const cleaned = pageText.replace(/\s+/g, ' ').replace(/\s([.,;?])/g, '$1').trim()
-            return `<page number="${idx + 1}">\n${cleaned}\n</page>`
+        pdfParser.on('pdfParser_dataError', (errData) => {
+            reject(errData instanceof Error ? errData : errData.parserError)
         })
-        .join('\n')
 
-    return { text: s, numPages: totalPages }
+        pdfParser.on('pdfParser_dataReady', (pdfData) => {
+            const numPages = pdfData.Pages.length
+
+            const pagesText = pdfData.Pages.map((page, idx) => {
+                const texts = page.Texts.map(t =>
+                    t.R.map(r => decodeURIComponent(r.T)).join('')
+                ).join(' ')
+                const cleaned = texts.replace(/\s+/g, ' ').replace(/\s([.,;?])/g, '$1').trim()
+                return `<page number="${idx + 1}">\n${cleaned}\n</page>`
+            })
+
+            resolve({ text: pagesText.join('\n'), numPages })
+        })
+
+        pdfParser.parseBuffer(buffer)
+    })
 }
 
 export async function POST(request: NextRequest) {
@@ -24,7 +36,8 @@ export async function POST(request: NextRequest) {
         }
 
         const arrayBuffer = await file.arrayBuffer()
-        const { text, numPages } = await pdfToText(arrayBuffer)
+        const buffer = Buffer.from(arrayBuffer)
+        const { text, numPages } = await pdfToText(buffer)
 
         return NextResponse.json({
             text,
