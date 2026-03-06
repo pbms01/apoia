@@ -10,13 +10,6 @@ const nextConfig = {
             type: 'asset/source',
         })
 
-        if (isServer) {
-            // Alias pdfjs-dist to legacy build for serverless compatibility
-            config.resolve.alias = {
-                ...config.resolve.alias,
-                'pdfjs-dist': 'pdfjs-dist/legacy/build/pdf.mjs',
-            }
-        }
         return config
     },
 }

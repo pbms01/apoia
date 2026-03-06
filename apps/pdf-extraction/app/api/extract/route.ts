@@ -1,41 +1,18 @@
-// @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server'
-import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist/legacy/build/pdf.mjs'
+import { extractText, getDocumentProxy } from 'unpdf'
 
-// Disable worker for server-side usage (Vercel serverless)
-GlobalWorkerOptions.workerSrc = ''
+async function pdfToText(arrayBuffer: ArrayBuffer) {
+    const pdf = await getDocumentProxy(new Uint8Array(arrayBuffer))
+    const { totalPages, text: rawText } = await extractText(pdf, { mergePages: false })
 
-// Inline pdfToText to avoid worker import issues in the sub-app
-async function pdfToText(blob: ArrayBuffer) {
-    const doc = await getDocument(blob.slice(0)).promise
-    const pdf = {
-        pages: [] as any[]
-    }
-    const promises = []
-    const loadPage = pageNum => doc.getPage(pageNum).then(async page => {
-        const viewport = page.getViewport({ scale: 1.0 })
-        const pag = {
-            content: undefined as any,
-            pageInfo: { num: pageNum, height: viewport.height }
-        }
-        pdf.pages.push(pag)
-        await page.getTextContent({ normalizeWhitespace: true }).then((content) => {
-            pag.content = content.items.map(item => ({
-                str: item.str,
-            }))
+    const s = rawText
+        .map((pageText, idx) => {
+            const cleaned = pageText.replace(/\s+/g, ' ').replace(/\s([.,;?])/g, '$1').trim()
+            return `<page number="${idx + 1}">\n${cleaned}\n</page>`
         })
-    })
-    for (let i = 1; i <= doc.numPages; i++) {
-        promises.push(loadPage(i))
-    }
-    await Promise.all(promises)
-    pdf.pages.sort((a, b) => a.pageInfo.num - b.pageInfo.num)
+        .join('\n')
 
-    const pagesText = pdf.pages.map(page =>
-        page.content.map((item) => item.str).join(' ').replace(/\s+/g, ' ').replace(/\s([.,;?])/g, '$1').trim())
-
-    const s = pagesText.map((str, idx) => `<page number="${idx + 1}">\n${str}\n</page>`).join('\n')
-    return { text: s, numPages: doc.numPages }
+    return { text: s, numPages: totalPages }
 }
 
 export async function POST(request: NextRequest) {
