@@ -11,12 +11,11 @@ const nextConfig = {
         })
 
         if (isServer) {
-            config.externals = [
-                ...config.externals,
-                {
-                    "pdfjs-dist/build/pdf.worker.min.js": "pdfjs-dist/build/pdf.worker.min.js"
-                }
-            ]
+            // Alias pdfjs-dist to legacy build for serverless compatibility
+            config.resolve.alias = {
+                ...config.resolve.alias,
+                'pdfjs-dist': 'pdfjs-dist/legacy/build/pdf.mjs',
+            }
         }
         return config
     },
